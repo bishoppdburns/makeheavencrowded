@@ -1,0 +1,52 @@
+
+<main id="main">
+
+  <section class="page-hero grain">
+    <div class="glow glow-ember" style="width:600px;height:600px;right:-200px;top:-100px" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="eyebrow reveal">Contact</p>
+      <h1 class="reveal d1">Let's <span class="ember">talk.</span></h1>
+      <p class="lede reveal d2">Reach the ministry office for anything not covered below. We read every message.</p>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="wrap">
+      <div class="paths reveal">
+        <a class="path" href="/speaking#book" style="min-height:0"><span class="path-num">Speaking</span><h3>Book Philip</h3><p>Revivals, conferences, trainings and special services.</p><span class="text-link">Booking form <span class="arrow">&rarr;</span></span></a>
+        <a class="path" href="/books#bulk" style="min-height:0"><span class="path-num">Books</span><h3>Bulk Orders</h3><p>Church pricing on the book and the 30-Day Devotional.</p><span class="text-link">Order form <span class="arrow">&rarr;</span></span></a>
+        <a class="path" href="/recovery#connect" style="min-height:0"><span class="path-num">Freedom</span><h3>Get Help</h3><p>Confidential contact with the Breakthrough Recovery team.</p><span class="text-link">Reach out <span class="arrow">&rarr;</span></span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap split wide-right" style="align-items:start">
+      <div>
+        <p class="eyebrow reveal">General Inquiries</p>
+        <h2 class="reveal d1">Send a <span class="serif-accent">message.</span></h2>
+        <div class="mt-m reveal d2 stack">
+          <div><h4>Email</h4><a href="mailto:{{EMAIL}}">{{EMAIL}}</a></div>
+          <div><h4>Church</h4><p class="muted mb-0">Relentless Worship Center<br>210 Robinwood Dr<br>Dalton, GA</p></div>
+        </div>
+      </div>
+      <div class="panel reveal d1">
+        <form class="form" name="contact" method="POST" action="/thanks" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="contact">
+          <p class="hp"><label>Leave blank <input name="bot-field"></label></p>
+          <div class="field"><label for="c-name">Name <span class="req">*</span></label><input id="c-name" name="name" autocomplete="name" required></div>
+          <div class="field"><label for="c-email">Email <span class="req">*</span></label><input id="c-email" type="email" name="email" autocomplete="email" required></div>
+          <div class="field full">
+            <label for="c-topic">Topic</label>
+            <select id="c-topic" name="topic">
+              <option>General question</option><option>Media or interview request</option><option>Relentless School of Ministry</option><option>Relentless Ministry Network</option><option>Prayer request</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field full"><label for="c-msg">Message <span class="req">*</span></label><textarea id="c-msg" name="message" required></textarea></div>
+          <button class="btn full" type="submit">Send Message <span class="arrow">&rarr;</span></button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
