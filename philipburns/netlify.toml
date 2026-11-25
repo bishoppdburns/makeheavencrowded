@@ -1,0 +1,30 @@
+# PhilipBurns.com - static site, no build step required.
+# In Netlify: set this folder ("philipburns") as the base/publish directory,
+# or move these files to the root of a dedicated repository.
+[build]
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[redirects]]
+  from = "https://philipburns.com/*"
+  to = "https://www.philipburns.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/_src/*"
+  to = "/404"
+  status = 404
+  force = true

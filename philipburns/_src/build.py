@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""
+PhilipBurns.com page builder.
+
+Each page body lives in _src/pages/<name>.html. This script wraps every body
+with the shared <head>, header and footer and writes the finished page to the
+site root (philipburns/<name>.html). Edit the fragments or the shared parts
+below, then run:   python3 _src/build.py
+The output is plain static HTML; no build step is needed on Netlify.
+"""
+import json, pathlib, re
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+PAGES = ROOT / "_src" / "pages"
+SITE = "https://www.philipburns.com"
+
+# ---------------------------------------------------------------- settings
+# Fill these in and rebuild; every page picks them up.
+SOCIAL = {
+    "facebook":  "#",   # TODO: https://facebook.com/...
+    "instagram": "#",   # TODO: https://instagram.com/...
+    "youtube":   "#",   # TODO: https://youtube.com/@...
+}
+AMAZON = "https://www.amazon.com/author/philipburns"
+EMAIL = "bishopburns@icloud.com"
+MOVEMENT = "https://makeheavencrowded.org"
+
+PAGE_META = {
+    "index":    ("Philip D. Burns | Revival Preacher, Author and Apostolic Leader",
+                 "Pastor Philip D. Burns is a revival preacher, author of Make Heaven Crowded and founder of Breakthrough Recovery. Invite him to preach at your church, conference or revival."),
+    "speaking": ("Invite Philip to Speak | Philip D. Burns",
+                 "Book Pastor Philip D. Burns for revivals, conferences, leadership intensives, evangelism training and recovery events."),
+    "books":    ("Books and Resources | Philip D. Burns",
+                 "Make Heaven Crowded and the 30-Day Devotional by Pastor Philip D. Burns. Bulk church pricing and church-wide campaign resources."),
+    "recovery": ("Breakthrough Recovery | Christ-Centered Recovery and Discipleship",
+                 "Breakthrough Recovery is a Christ-centered recovery and discipleship ministry founded by Pastor Philip D. Burns. Find freedom or launch it at your church."),
+    "about":    ("About Philip D. Burns | Pastor, Preacher, Builder",
+                 "The story, calling and ministries of Pastor Philip D. Burns of Relentless Worship Center in Dalton, Georgia."),
+    "contact":  ("Contact | Philip D. Burns",
+                 "Reach the ministry office of Pastor Philip D. Burns for speaking, books, Breakthrough Recovery and media."),
+    "thanks":   ("Thank You | Philip D. Burns", "Your message has been received."),
+    "404":      ("Page Not Found | Philip D. Burns", "That page could not be found."),
+}
+
+NAV = [("speaking", "Speaking"), ("books", "Books"), ("recovery", "Breakthrough Recovery"), ("about", "About")]
+
+def href(name):
+    return "/" if name == "index" else f"/{name}"
+
+ICON = {
+    "facebook": '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.5 1.6-1.5h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.4 0-4.1 1.5-4.1 4.2v2.3H7.5V14h2.7v8h3.3z"/></svg>',
+    "instagram": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
+    "youtube": '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12a31 31 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.4-1.6.5-4.8.5-4.8s0-3.2-.5-4.8zM9.7 15.1V8.9L15.5 12l-5.8 3.1z"/></svg>',
+}
+
+def head(name):
+    title, desc = PAGE_META[name]
+    url = SITE + ("/" if name == "index" else f"/{name}")
+    return f"""<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<meta name="description" content="{desc}">
+<link rel="canonical" href="{url}">
+<meta name="theme-color" content="#0B0907">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Philip D. Burns">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{desc}">
+<meta property="og:url" content="{url}">
+<meta property="og:image" content="{SITE}/assets/img/og-default.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css">
+"""
+
+def header(name):
+    cur = ' aria-current="page"'
+    links = "\n".join(
+        f'        <li><a href="{href(k)}"{cur if k == name else ""}>{label}</a></li>'
+        for k, label in NAV)
+    solid = " solid" if name in ("thanks", "404") else ""
+    return f"""<a class="skip" href="#main">Skip to content</a>
+<header class="site-header{solid}">
+  <div class="wrap nav">
+    <a class="brand" href="/" aria-label="Philip D. Burns home">
+      <span class="brand-name">Philip <b>D.</b> Burns</span>
+      <span class="brand-tag">Make Heaven Crowded</span>
+    </a>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="primary-nav"><span></span><span></span><span></span></button>
+    <nav aria-label="Primary">
+      <ul class="nav-links" id="primary-nav">
+{links}
+        <li><a class="btn" href="/speaking#book">Invite Philip</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+"""
+
+def footer():
+    socials = "".join(f'<a href="{u}" aria-label="{k.title()}">{ICON[k]}</a>' for k, u in SOCIAL.items())
+    return f"""
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <span class="eyebrow">The Mission</span>
+        <p class="footer-mission">We exist to make <em>Heaven</em> crowded.</p>
+        <form class="inline-signup" name="newsletter" method="POST" action="/thanks" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="newsletter">
+          <p class="hp"><label>Leave blank <input name="bot-field"></label></p>
+          <label class="sr-only" for="f-news">Email address</label>
+          <input id="f-news" type="email" name="email" placeholder="Your email for updates" required>
+          <button class="btn" type="submit">Join</button>
+        </form>
+        <p class="small muted mt-s">Sermons, ministry updates and resources. No spam, ever.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="/speaking">Speaking</a></li>
+          <li><a href="/books">Books</a></li>
+          <li><a href="/recovery">Breakthrough Recovery</a></li>
+          <li><a href="/about">About Philip</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Ministries</h4>
+        <ul>
+          <li><a href="/about#ministries">Relentless Worship Center</a></li>
+          <li><a href="/about#ministries">Relentless School of Ministry</a></li>
+          <li><a href="/about#ministries">Relentless Ministry Network</a></li>
+          <li><a href="{MOVEMENT}" rel="noopener">Make Heaven Crowded Movement</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Connect</h4>
+        <ul>
+          <li><a href="/speaking#book">Booking requests</a></li>
+          <li><a href="/books#bulk">Bulk church orders</a></li>
+          <li><a href="mailto:{EMAIL}">{EMAIL}</a></li>
+          <li class="muted">Dalton, Georgia</li>
+        </ul>
+        <div class="socials mt-m">{socials}</div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span data-year>2026</span> Philip D. Burns Ministries. All rights reserved.</span>
+      <span>Scripture quotations taken from the New King James Version&reg;. Copyright &copy; 1982 by Thomas Nelson. Used by permission.</span>
+    </div>
+  </div>
+</footer>
+<script src="/assets/js/site.js" defer></script>
+</body>
+</html>
+"""
+
+def jsonld(name):
+    if name == "index":
+        data = {
+            "@context": "https://schema.org", "@type": "Person",
+            "name": "Philip D. Burns", "url": SITE,
+            "jobTitle": "Pastor, Author and Revival Preacher",
+            "worksFor": {"@type": "Church", "name": "Relentless Worship Center",
+                          "address": {"@type": "PostalAddress", "addressLocality": "Dalton", "addressRegion": "GA", "addressCountry": "US"}},
+            "sameAs": [u for u in SOCIAL.values() if u.startswith("http")] + [AMAZON],
+        }
+    elif name == "books":
+        data = {"@context": "https://schema.org", "@type": "Book", "name": "Make Heaven Crowded",
+                "alternativeHeadline": "Reclaiming the Urgency of Evangelism and Raising Up Disciples Who Multiply",
+                "author": {"@type": "Person", "name": "Philip D. Burns"},
+                "image": SITE + "/assets/img/mhc-cover-600.jpg", "url": SITE + "/books"}
+    else:
+        return ""
+    return f'<script type="application/ld+json">{json.dumps(data)}</script>\n'
+
+def build():
+    for frag in sorted(PAGES.glob("*.html")):
+        name = frag.stem
+        body = frag.read_text()
+        body = body.replace("{{AMAZON}}", AMAZON).replace("{{EMAIL}}", EMAIL).replace("{{MOVEMENT}}", MOVEMENT)
+        html = head(name) + jsonld(name) + "</head>\n<body>\n" + header(name) + body + footer()
+        (ROOT / f"{name}.html").write_text(html)
+        print("built", name + ".html")
+
+if __name__ == "__main__":
+    build()
